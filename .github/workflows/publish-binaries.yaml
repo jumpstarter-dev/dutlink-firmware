@@ -1,0 +1,45 @@
+on:
+  release:
+    types: [created]
+
+permissions:
+    contents: write
+    packages: write
+
+jobs:
+  firmware-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: sudo apt-get install -y make podman
+      - name: Setup the builder image
+        run: |
+          cd firmware/bootloader
+          make .build-container
+      - name: Build the bootloader firmware
+        run: |
+          cd firmware/bootloader
+          make in-container
+      - name: Build the application firmware
+        run: |
+          cd firmware/application
+          make in-container
+
+      - name: Prepare all binaries in one directory
+        run: |
+          mkdir release
+          cp firmware/bootloader/*.bin release
+          cp firmware/application/*.bin release
+          cp firmware/application/*.cab release
+          ls -la release/
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: release/*
+          asset_name: firmware
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Automated release based on tag creation"
+          file_glob: true

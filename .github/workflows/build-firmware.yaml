@@ -1,0 +1,43 @@
+name: Build 
+on: [push, pull_request]
+jobs:
+  bootloader-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: sudo apt-get install -y make podman
+      - name: Setup the builder image
+        run: |
+          cd firmware/bootloader
+          make .build-container
+      - name: Build the firmware
+        run: |
+          cd firmware/bootloader
+          make in-container
+      - name: Archive resulting bootloader
+        uses: actions/upload-artifact@v3
+        with:
+          name: jumpstarter-bootloader-dfu.bin
+          path: firmware/bootloader/dfu-bootloader.bin
+
+  application-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: sudo apt-get install -y make podman
+      - name: Setup the builder image
+        run: |
+          cd firmware/application
+          make .build-container
+      - name: Build the firmware
+        run: |
+          cd firmware/application
+          make in-container
+      - name: Archive resulting application
+        uses: actions/upload-artifact@v3
+        with:
+          name: jumpstarter-main.cab 
+          path: firmware/application/jumpstarter*
+

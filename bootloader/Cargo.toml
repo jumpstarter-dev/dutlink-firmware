@@ -1,0 +1,40 @@
+[package]
+name = "dfu-bootloader"
+description = "DFU bootloader example"
+version = "0.2.0"
+authors = ["Vitalii Bursov <vitaly@bursov.com>", "Miguel Angel Ajo <majopela@redhat.com>"]
+edition = "2018"
+license = "MIT"
+keywords = ["no-std", "usb-device", "dfu"]
+repository = "https://github.com/vitalyvb/usbd-dfu-example"
+
+[profile.release]
+opt-level = 's'
+# lower optimization can be used for debugging, but then you
+# need to bump the memory map to 0x6000 bytes for bootloader
+#opt-level = 1
+lto = true
+codegen-units = 1
+debug = true
+
+[dependencies]
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7.3"
+embedded-hal = "0.2.7"
+panic-halt = "0.2.0"
+usbd-dfu = "0.3.0"
+embedded-storage = "0.3.0"
+
+[dependencies.stm32f4xx-hal]
+version = "0.15.0"
+features = ["rt", "stm32f411", "usb_fs"]
+
+[dependencies.usb-device]
+version = "0.2.9"
+features = ["control-buffer-256"]
+
+[dependencies.stm32f4]
+version = "0.15.1"
+features = ["stm32f411", "rt"]
+
+

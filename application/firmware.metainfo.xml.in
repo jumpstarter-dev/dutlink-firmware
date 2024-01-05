@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='utf-8'?>
+<component type="firmware">
+  <id>com.redhat.jumpstarter.testharness.firmware</id>
+  <name>Jumpstarter project test-harness</name>
+  <summary>A test harness device to bring Edge devices into CI</summary>
+  <description>
+    <p>This firmware takes care of controlling the onboard hardware, like USB storage routing, leds, power measurement, power control, etc.</p>
+  </description>
+  <provides>
+    <firmware type="flashed">af277716-d895-5da9-af81-37e877c969ec</firmware>
+  </provides>
+  <url type="homepage">https://github.com/redhat-et/jumpstarter</url>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <categories>
+    <category>X-BaseboardManagementController</category>
+    <category>X-System</category>
+  </categories>
+  <custom>
+    <value key="LVFS::DeviceIntegrity">unsigned</value>
+    <value key="LVFS::VersionFormat">pair</value>
+    <value key="LVFS::UpdateProtocol">com.st.dfuse</value>
+  </custom>
+  <releases>
+    <release version="@VERSION@" date="@DATE@" urgency="medium">
+      <checksum filename="jumpstarter.bin" target="content"/>
+      <description>
+        <p>Bugfix empty power control config, in that case the
+        normal analog power control should be performed, but
+        0.06 requires a config to be present (bug).</p>
+      </description>
+    </release>
+    <release version="0.06" date="2023-10-11" urgency="medium">
+      <checksum filename="jumpstarter.bin" target="content"/>
+      <description>
+        <p>Provides an initial firmware update, enabling:</p>
+        <ul>
+          <li>support for json config field, removed storage</li>
+          <li>alternate power control config</li>
+          <li>rescue power mode (power on into recovery)</li>
+        </ul>
+      </description>
+    </release>
+     <release version="0.05" date="2023-08-14" urgency="medium">
+      <checksum filename="jumpstarter.bin" target="content"/>
+      <description>
+        <p>Provides an initial firmware update, enabling:</p>
+        <ul>
+          <li>set pin commands</li>
+          <li>storage control</li>
+          <li>serial console access</li>
+          <li>power control.</li>
+          <li>power metering.</li>
+          <li>about and version commands</li>
+          <li>10 commands history</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+  <tags>
+   <!-- this is consumed by the BKC settings to allow us upgrade/downgrade of firmwares with changing protocols -->
+   <tag>jumpstarter-protocol-0.02</tag>
+  </tags>
+</component>

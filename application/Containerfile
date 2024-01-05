@@ -1,0 +1,9 @@
+FROM registry.fedoraproject.org/fedora:38
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup.sh
+RUN sh rustup.sh -y
+RUN whoami
+ENV PATH=/root/.cargo/bin:$PATH
+RUN rustup target add thumbv7em-none-eabihf
+RUN dnf install -y stlink openocd arm-none-eabi-binutils-cs \
+                   gcab libappstream-glib rpm-build copr-cli dfu-util \
+                   make git gcc
