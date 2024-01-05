@@ -48,9 +48,9 @@ clean:
 	touch .build-container
 
 firmware-builder: .build-container
-	podman run -ti --rm -v $(CURDIR)/../../:/workdir -w /workdir/firmware/bootloader firmware-builder bash
+	podman run -ti --rm -v $(CURDIR)/../:/workdir -w /workdir/bootloader firmware-builder bash
 
 in-container: .build-container
-	podman run -ti --rm -v $(CURDIR)/../../:/workdir -w /workdir/firmware/bootloader firmware-builder make $(THIS)
+	podman run -ti --rm -v $(CURDIR)/../:/workdir -w /workdir/bootloader firmware-builder make $(THIS)
 
 .PHONY: clean all flash openocd

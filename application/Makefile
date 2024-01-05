@@ -86,7 +86,7 @@ clean:
 	touch .build-container
 
 firmware-builder: .build-container
-	podman run -ti --rm -v $(CURDIR)/../../:/workdir -w /workdir/firmware/application firmware-builder bash
+	podman run -ti --rm -v $(CURDIR)/../:/workdir -w /workdir/application firmware-builder bash
 
 in-container: .build-container
-	podman run -ti --rm -v $(CURDIR)/../../:/workdir -w /workdir/firmware/application firmware-builder make $(THIS)
+	podman run -ti --rm -v $(CURDIR)/../:/workdir -w /workdir/application firmware-builder make $(THIS)
