@@ -1,5 +1,5 @@
 
-use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::digital::OutputPin;
 
  // Device control abstractions
 

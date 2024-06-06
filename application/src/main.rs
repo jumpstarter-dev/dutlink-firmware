@@ -188,14 +188,11 @@ mod app {
         usb_dp.set_low();
         cortex_m::asm::delay(1024 * 50);
 
-        let usb_periph = USB {
-            usb_global: dp.OTG_FS_GLOBAL,
-            usb_device: dp.OTG_FS_DEVICE,
-            usb_pwrclk: dp.OTG_FS_PWRCLK,
-            hclk: clocks.hclk(),
-            pin_dm: gpioa.pa11.into_alternate(),
-            pin_dp: usb_dp.into_alternate(),
-        };
+        let usb_periph = USB::new(
+            (dp.OTG_FS_GLOBAL, dp.OTG_FS_DEVICE, dp.OTG_FS_PWRCLK),
+            (gpioa.pa11.into_alternate(), usb_dp.into_alternate()),
+            &clocks,
+        );
 
         unsafe {
             USB_BUS = Some(UsbBus::new(usb_periph, &mut EP_MEMORY));
@@ -212,13 +209,16 @@ mod app {
             unsafe { USB_BUS.as_ref().unwrap() },
             UsbVidPid(0x2b23, 0x1012),
         )
-        .manufacturer("Red Hat Inc.")
-        .product("Jumpstarter")
-        .serial_number(get_serial_str())
+        .strings(&[
+            StringDescriptors::new(LangID::EN)
+            .manufacturer("Red Hat Inc.")
+            .product("Jumpstarter")
+            .serial_number(get_serial_str())
+        ]).unwrap()
         .device_release(version::usb_version_bcd_device())
         .self_powered(false)
-        .max_power(250)
-        .max_packet_size_0(64)
+        .max_power(250).unwrap()
+        .max_packet_size_0(64).unwrap()
         .build();
 
          let shell = shell::new(serial1);
@@ -427,7 +427,7 @@ mod app {
 
         ctx.shared
             .timer
-            .lock(|tim| tim.clear_interrupt(timer::Event::Update));
+            .lock(|tim| tim.clear_flags(timer::Flag::Update));
     }
 
     #[task(binds = DMA2_STREAM0, shared=[adc_dma_transfer, power_meter], local=[adc_buffer])]

@@ -226,6 +226,7 @@ impl<B: UsbBus> UsbClass<B> for ControlClass {
             USB_CLASS_VENDOR_SPECIFIC,
             USB_SUBCLASS_JUMPSTARTER,
             USB_PROTOCOL_JUMPSTARTER,
+            None,
         )?;
 
         writer.interface(
