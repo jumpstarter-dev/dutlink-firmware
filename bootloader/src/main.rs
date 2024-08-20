@@ -263,15 +263,11 @@ fn dfu_init() -> LedType {
 
     /* USB Peripheral */
 
-    let usb_periph = USB {
-        usb_global: device.OTG_FS_GLOBAL,
-        usb_device: device.OTG_FS_DEVICE,
-        usb_pwrclk: device.OTG_FS_PWRCLK,
-        pin_dm: stm32f4xx_hal::gpio::alt::otg_fs::Dm::PA11(gpioa.pa11.into_alternate()),
-        pin_dp: stm32f4xx_hal::gpio::alt::otg_fs::Dp::PA12(usb_dp.into_alternate()),
-        hclk: clocks.hclk(),
-    };
-
+    let usb_periph = USB::new(
+        (device.OTG_FS_GLOBAL, device.OTG_FS_DEVICE, device.OTG_FS_PWRCLK),
+        (gpioa.pa11.into_alternate(), usb_dp.into_alternate()),
+        &clocks,
+    );
 
     let bus = unsafe {
         USB_BUS.as_mut_ptr().write(UsbBus::new(usb_periph, &mut EP_MEMORY ));
@@ -289,9 +285,9 @@ fn dfu_init() -> LedType {
 
     let usb_dev = UsbDeviceBuilder::new(&bus, UsbVidPid(0x2b23, 0x1012))
         .strings(&[
-            StringDescriptors::new(LangID::EN)
+            StringDescriptors::default()
             .manufacturer("Red Hat Inc.")
-            .product("Jumpstarter DFU Mode")
+            .product("Dutlink DFU Mode")
             .serial_number(get_serial_str())
         ]).unwrap()
         .device_release(0x0001)// Intentionally keep a very low version 0.1, so that the main firmware
