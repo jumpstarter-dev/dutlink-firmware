@@ -1,7 +1,6 @@
 
-use stm32f4xx_hal::gpio::DynamicPin;
-use embedded_hal::digital::v2::OutputPin;
-use embedded_hal::digital;
+use stm32f4xx_hal::gpio::{self,DynamicPin};
+use embedded_hal::digital::OutputPin;
 
 // create an enum with 3 possibilities: High, Low, and Floating
 // this is used to set the CTL pins to a specific state
@@ -89,40 +88,40 @@ where
 
     fn _set_ctl_a(&mut self, state:PinState) {
         match state {
-            PinState::High      => self.ctl_a.make_push_pull_output_in_state(digital::v2::PinState::High),
-            PinState::Low       => self.ctl_a.make_push_pull_output_in_state(digital::v2::PinState::Low),
+            PinState::High      => self.ctl_a.make_push_pull_output_in_state(gpio::PinState::High),
+            PinState::Low       => self.ctl_a.make_push_pull_output_in_state(gpio::PinState::Low),
             PinState::Floating  => self.ctl_a.make_floating_input(),
         }
     }
 
     fn _set_ctl_b(&mut self, state: PinState) {
         match state {
-            PinState::High      => self.ctl_b.make_push_pull_output_in_state(digital::v2::PinState::High),
-            PinState::Low       => self.ctl_b.make_push_pull_output_in_state(digital::v2::PinState::Low),
+            PinState::High      => self.ctl_b.make_push_pull_output_in_state(gpio::PinState::High),
+            PinState::Low       => self.ctl_b.make_push_pull_output_in_state(gpio::PinState::Low),
             PinState::Floating  => self.ctl_b.make_floating_input(),
         }
     }
 
     fn _set_ctl_c(&mut self, state: PinState) {
         match state {
-            PinState::High      => self.ctl_c.make_push_pull_output_in_state(digital::v2::PinState::High),
-            PinState::Low       => self.ctl_c.make_push_pull_output_in_state(digital::v2::PinState::Low),
+            PinState::High      => self.ctl_c.make_push_pull_output_in_state(gpio::PinState::High),
+            PinState::Low       => self.ctl_c.make_push_pull_output_in_state(gpio::PinState::Low),
             PinState::Floating  => self.ctl_c.make_floating_input(),
         }
     }
 
     fn _set_ctl_d(&mut self, state: PinState) {
         match state {
-            PinState::High      => self.ctl_d.make_push_pull_output_in_state(digital::v2::PinState::High),
-            PinState::Low       => self.ctl_d.make_push_pull_output_in_state(digital::v2::PinState::Low),
+            PinState::High      => self.ctl_d.make_push_pull_output_in_state(gpio::PinState::High),
+            PinState::Low       => self.ctl_d.make_push_pull_output_in_state(gpio::PinState::Low),
             PinState::Floating  => self.ctl_d.make_floating_input(),
         }
     }
 
     fn _set_reset(&mut self, state: PinState) {
         match state {
-            PinState::High      => self.reset.make_push_pull_output_in_state(digital::v2::PinState::High),
-            PinState::Low       => self.reset.make_push_pull_output_in_state(digital::v2::PinState::Low),
+            PinState::High      => self.reset.make_push_pull_output_in_state(gpio::PinState::High),
+            PinState::Low       => self.reset.make_push_pull_output_in_state(gpio::PinState::Low),
             PinState::Floating  => self.reset.make_floating_input(),
         }
     }

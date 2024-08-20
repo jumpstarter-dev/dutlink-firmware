@@ -1,5 +1,5 @@
 use core::str;
-use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::digital::OutputPin;
 use core::fmt::Write;
 
 use arrayvec::ArrayString;
