@@ -210,9 +210,9 @@ mod app {
             UsbVidPid(0x2b23, 0x1012),
         )
         .strings(&[
-            StringDescriptors::new(LangID::EN)
+            StringDescriptors::default()
             .manufacturer("Red Hat Inc.")
-            .product("Jumpstarter")
+            .product("Dutlink")
             .serial_number(get_serial_str())
         ]).unwrap()
         .device_release(version::usb_version_bcd_device())
