@@ -15,23 +15,23 @@ jobs:
       - run: sudo apt-get install -y make podman
       - name: Setup the builder image
         run: |
-          cd firmware/bootloader
+          cd bootloader
           make .build-container
       - name: Build the bootloader firmware
         run: |
-          cd firmware/bootloader
+          cd bootloader
           make in-container
       - name: Build the application firmware
         run: |
-          cd firmware/application
+          cd application
           make in-container
 
       - name: Prepare all binaries in one directory
         run: |
           mkdir release
-          cp firmware/bootloader/*.bin release
-          cp firmware/application/*.bin release
-          cp firmware/application/*.cab release
+          cp bootloader/*.bin release
+          cp application/*.bin release
+          cp application/*.cab release
           ls -la release/
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
