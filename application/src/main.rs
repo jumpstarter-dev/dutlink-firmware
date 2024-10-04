@@ -225,7 +225,7 @@ mod app {
          let shell_status = shell::ShellStatus{
              monitor_enabled: false,
              meter_enabled: false,
-             console_mode: false,};
+             console_mode: true,};
 
 
         let (to_dut_serial, to_dut_serial_consumer) = ctx.local.q_to_dut.split();
