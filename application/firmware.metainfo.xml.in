@@ -25,6 +25,12 @@
     <release version="@VERSION@" date="@DATE@" urgency="medium">
       <checksum filename="jumpstarter.bin" target="content"/>
       <description>
+        <p>Enter console mode by default</p>
+      </description>
+    </release>
+    <release version="0.07" date="2024-01-05" urgency="medium">
+      <checksum filename="jumpstarter.bin" target="content"/>
+      <description>
         <p>Bugfix empty power control config, in that case the
         normal analog power control should be performed, but
         0.06 requires a config to be present (bug).</p>
