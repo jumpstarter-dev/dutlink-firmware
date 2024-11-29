@@ -4,7 +4,7 @@ use stm32f4xx_hal::otg_fs::UsbBusType;
 use usbd_dfu_rt::{DfuRuntimeClass, DfuRuntimeOps};
 use usb_device::class_prelude::*;
 
-pub struct DFUBootloader; 
+pub struct DFUBootloader;
 
 pub type DFUBootloaderRuntime = DfuRuntimeClass<DFUBootloader>;
 

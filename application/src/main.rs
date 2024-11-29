@@ -178,7 +178,7 @@ mod app {
         storage.power_off();
 
 
-        // setup a timer for the periodic 100ms task
+        // setup a timer for the periodic 10ms task
         let mut timer = dp.TIM2.counter_ms(&clocks);
         timer.start(10.millis()).unwrap(); //100Hz
         timer.listen(timer::Event::Update);

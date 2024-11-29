@@ -118,6 +118,15 @@ impl ControlClass {
             },
         }
     }
+    /// This function is called after processing USB control OUT requests to handle any necessary
+    /// work regarding the commands executed in the control_out method.
+    ///
+    /// The post_poll function performs actions based on the data that was set during the
+    /// control_out phase, including refreshing measurements from the power meter, updating
+    /// the state of control pins, and executing power or storage actions. This separation allows
+    /// the class to batch actions that need to be taken after all USB transactions have been completed,
+    /// ensuring that changes are applied in a controlled manner.
+    ///
     pub fn post_poll<C: CTLPinsTrait, S: StorageSwitchTrait>(
         &mut self,
         config: &mut ConfigArea,
@@ -239,6 +248,18 @@ impl<B: UsbBus> UsbClass<B> for ControlClass {
         Ok(())
     }
 
+    /// Handles control transfer IN requests from the host.
+    ///
+    /// This function processes various vendor-specific requests, such as:
+    /// - Retrieving configuration settings for the device (name, tags, USB console, power settings).
+    /// - Providing information about the current power state, voltage, and current readings.
+    /// - Responding with the device's version information.
+    ///
+    /// The function checks the request type and recipient, and parses the
+    /// request value to determine which data to send back to the host.
+    /// Appropriate responses are constructed based on the parsed request.
+    ///
+    /// The responses will be sent back to the host through the ControlIn transfer.
     fn control_in(&mut self, xfer: ControlIn<B>) {
         let req = xfer.request();
 
@@ -318,7 +339,22 @@ impl<B: UsbBus> UsbClass<B> for ControlClass {
             }
         }
     }
-
+    /// Handles control transfer OUT requests from the host.
+    ///
+    /// This function processes various vendor-specific requests, such as:
+    /// - Refreshing the data from the power meter.
+    /// - Setting the power state (on, off, force on/off, or rescue).
+    /// - Managing storage actions (off, connect to host, or DUT).
+    /// - Configuring device settings (name, tags, USB console, power settings).
+    /// - Setting the state of control pins (Reset, A, B, C, D).
+    ///
+    /// The function checks the request type and recipient, and parses the
+    /// request value to determine the action to be taken. Appropriate
+    /// data fields within the control class are updated based on the
+    /// request.
+    ///
+    /// Any actions are taken later by the post_poll function once usb polling
+    /// of all devices has finished.
     fn control_out(&mut self, xfer: ControlOut<B>) {
         let req = xfer.request();
 
