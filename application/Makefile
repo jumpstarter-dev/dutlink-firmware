@@ -21,7 +21,7 @@
 TARGET      = jumpstarter
 TARGET_ELF  = target/thumbv7em-none-eabihf/release/jumpstarter
 TARGET_DEBUG_ELF  = target/thumbv7em-none-eabihf/debug/jumpstarter
-VERSION     = 0.08
+VERSION     = 0.09
 
 METADATA_DATE = $(shell date -u +%Y-%m-%d)
 GIT_REF=$(shell git describe --always --abbrev=12 --dirty)

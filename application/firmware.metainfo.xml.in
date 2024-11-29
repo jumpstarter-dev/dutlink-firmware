@@ -25,7 +25,16 @@
     <release version="@VERSION@" date="@DATE@" urgency="medium">
       <checksum filename="jumpstarter.bin" target="content"/>
       <description>
+        <p>Bugfix: Gets power control sequences from flash config instead
+           of intermediate RAM structure</p>
+      </description>
+    </release>
+    <release version="0.08" date="2024-10-04" urgency="medium">
+      <checksum filename="jumpstarter.bin" target="content"/>
+      <description>
         <p>Enter console mode by default</p>
+        <p>Provide usb control interface independent from console,
+           enables use from jumpstarter 0.5</p>
       </description>
     </release>
     <release version="0.07" date="2024-01-05" urgency="medium">

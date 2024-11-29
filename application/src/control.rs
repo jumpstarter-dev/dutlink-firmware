@@ -156,10 +156,10 @@ impl ControlClass {
         if let Some(action) = self.power.take() {
             match action {
                 PowerAction::Off => {
-                    ctlpins.power_off(&self.data.config.power_off);
+                    ctlpins.power_off(&config.get().power_off);
                 }
                 PowerAction::On => {
-                    ctlpins.power_on(&self.data.config.power_on);
+                    ctlpins.power_on(&config.get().power_on);
                 }
                 PowerAction::ForceOff => {
                     ctlpins.power_off(&[]);
@@ -168,7 +168,7 @@ impl ControlClass {
                     ctlpins.power_on(&[]);
                 }
                 PowerAction::Rescue => {
-                    ctlpins.power_on(&self.data.config.power_rescue);
+                    ctlpins.power_on(&config.get().power_rescue);
                 }
             }
         }
