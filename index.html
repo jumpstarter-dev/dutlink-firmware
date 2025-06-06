@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DUTLink Firmware Flasher</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.info { background-color: #e3f2fd; color: #1976d2; }
+        .status.success { background-color: #e8f5e8; color: #2e7d32; }
+        .status.warning { background-color: #fff3e0; color: #f57c00; }
+        .status.error { background-color: #ffebee; color: #c62828; }
+        .button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover:not(:disabled) {
+            background-color: #1976d2;
+        }
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .button.danger {
+            background-color: #f44336;
+        }
+        .button.danger:hover:not(:disabled) {
+            background-color: #d32f2f;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #4caf50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .instructions {
+            background-color: #fff9c4;
+            border-left: 4px solid #fbc02d;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #f57c00;
+        }
+        .log {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .hidden {
+            display: none;
+        }
+        .release-info {
+            background-color: #f0f8ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 DUTLink Firmware Flasher</h1>
+        
+        <div id="webusb-support" class="status error hidden">
+            ❌ WebUSB is not supported in this browser. Please use Chrome, Edge, or another Chromium-based browser.
+        </div>
+
+        <div id="https-warning" class="status warning hidden">
+            ⚠️ WebUSB requires HTTPS. This page must be served over HTTPS to access USB devices.
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li>Connect your DUTLink device to USB</li>
+                <li>Click "Check Latest Release" to fetch the latest firmware</li>
+                <li>Put device in DFU mode:
+                    <ul>
+                        <li>Hold the <strong>FACTORY_DFU</strong> button</li>
+                        <li>Press and release the <strong>RESET</strong> button</li>
+                        <li>Release the <strong>FACTORY_DFU</strong> button</li>
+                    </ul>
+                </li>
+                <li>Click "Connect to Device" and select your DFU device</li>
+                <li>Click "Flash Firmware" to start the process</li>
+            </ol>
+        </div>
+
+        <div class="release-info hidden" id="release-info">
+            <h3>📦 Latest Release</h3>
+            <p><strong>Version:</strong> <span id="release-version">-</span></p>
+            <p><strong>Bootloader:</strong> <span id="bootloader-size">-</span></p>
+            <p><strong>Application:</strong> <span id="application-size">-</span></p>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="button" id="check-release-btn" onclick="checkLatestRelease()">
+                📡 Check Latest Release
+            </button>
+            <button class="button" id="connect-btn" onclick="connectDevice()" disabled>
+                🔌 Connect to Device
+            </button>
+            <button class="button danger" id="flash-btn" onclick="flashFirmware()" disabled>
+                ⚡ Flash Firmware
+            </button>
+        </div>
+
+        <div class="progress hidden" id="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <div id="status-messages"></div>
+
+        <div class="log hidden" id="log-container"></div>
+    </div>
+
+    <script src="webdfu.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
