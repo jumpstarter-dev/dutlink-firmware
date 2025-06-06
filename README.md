@@ -15,6 +15,48 @@ The firmware is written in Rust, and it is made of two parts:
 
 you can find out more about jumpstarter in https://jumpstarter.dev
 
+# Flashing Firmware
+
+## Quick Start - Using the Flash Script
+
+The easiest way to flash firmware to your DUTLink device is using the provided `flash-dutlink.sh` script, which automatically downloads the latest release and flashes it to your device.
+
+### Prerequisites
+
+- **Linux system** (the script is designed for Linux)
+- **Root access** (required for dfu-util to access USB devices)
+- **dfu-util** installed on your system
+- **curl** for downloading firmware
+
+### Flashing Process
+
+1. **Download the flash script:**
+   ```bash
+   wget https://raw.githubusercontent.com/jumpstarter-dev/dutlink-firmware/main/flash-dutlink.sh
+   chmod +x flash-dutlink.sh
+   ```
+
+2. **Run the script as root:**
+   ```bash
+   sudo ./flash-dutlink.sh
+   ```
+
+3. **Follow the on-screen instructions:**
+   - Connect your DUTLink device via USB
+   - Put the device in DFU mode:
+     - Hold the **FACTORY_DFU** button
+     - Press and release the **RESET** button  
+     - Release the **FACTORY_DFU** button
+   - Press Enter when ready
+
+4. **Wait for completion:**
+   - The script will automatically download the latest firmware
+   - Flash the bootloader first
+   - Then flash the application firmware
+   - The device will reset automatically when complete
+
+The script handles the entire flashing process, including downloading the latest release binaries and managing the two-stage flashing process (bootloader + application).
+
 # Devel environment
 
 ## Environment setup
