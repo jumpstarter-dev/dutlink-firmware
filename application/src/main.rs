@@ -8,7 +8,6 @@ mod control;
 mod dfu;
 mod storage;
 mod usbserial;
-mod shell;
 mod ctlpins;
 mod powermeter;
 mod filter;
@@ -32,7 +31,6 @@ mod app {
         dma::{config::DmaConfig, PeripheralToMemory, Stream0, StreamsTuple, Transfer},
         pac::{ADC1, DMA2},
     };
-    use core::fmt::Write;
 
     use heapless::spsc::{Consumer, Producer, Queue};
     use usb_device::{class_prelude::*, prelude::*};
@@ -42,7 +40,6 @@ mod app {
     use crate::{control::ControlClass, dfu::{get_serial_str, new_dfu_bootloader, DFUBootloaderRuntime}};
     use crate::storage::*;
     use crate::usbserial::*;
-    use crate::shell;
     use crate::ctlpins;
     use crate::powermeter::*;
     use crate::version;
@@ -60,8 +57,7 @@ mod app {
     struct Shared {
         timer: timer::CounterMs<pac::TIM2>,
         usb_dev: UsbDevice<'static, UsbBusType>,
-        shell: shell::ShellType,
-        shell_status: shell::ShellStatus,
+        usb_serial: USBSerialType,
         dfu: DFUBootloaderRuntime,
         ctl: ControlClass,
 
@@ -199,11 +195,11 @@ mod app {
         }
         /* I tried creating a 2nd serial port which only works on STM32F412 , 411 has not enough
            endpoints, but it didn't work well, the library probably needs some debugging */
-        let mut serial1 = new_usb_serial! (unsafe { USB_BUS.as_ref().unwrap() });
+        let mut usb_serial = new_usb_serial! (unsafe { USB_BUS.as_ref().unwrap() });
         let dfu = new_dfu_bootloader(unsafe { USB_BUS.as_ref().unwrap() });
         let ctl = ControlClass::new(unsafe { USB_BUS.as_ref().unwrap() });
 
-        serial1.reset();
+        usb_serial.reset();
 
         let usb_dev = UsbDeviceBuilder::new(
             unsafe { USB_BUS.as_ref().unwrap() },
@@ -221,11 +217,6 @@ mod app {
         .max_packet_size_0(64).unwrap()
         .build();
 
-         let shell = shell::new(serial1);
-         let shell_status = shell::ShellStatus{
-             monitor_enabled: false,
-             meter_enabled: false,
-             console_mode: true,};
 
 
         let (to_dut_serial, to_dut_serial_consumer) = ctx.local.q_to_dut.split();
@@ -237,8 +228,7 @@ mod app {
             Shared {
                 timer,
                 usb_dev,
-                shell,
-                shell_status,
+                usb_serial,
                 dfu,
                 ctl,
                 led_tx,
@@ -266,21 +256,18 @@ mod app {
         )
     }
 
-    #[task(binds = USART1, priority=1, local = [usart_rx, to_host_serial], shared = [shell_status, led_rx])]
+    #[task(binds = USART1, priority=1, local = [usart_rx, to_host_serial], shared = [led_rx])]
     fn usart_task(cx: usart_task::Context){
         let usart_rx = cx.local.usart_rx;
-        let shell_status = cx.shared.shell_status;
-        let led_rx = cx.shared.led_rx;
+        let mut led_rx = cx.shared.led_rx;
         let to_host_serial = cx.local.to_host_serial;
 
-        (shell_status, led_rx).lock(|shell_status, led_rx| {
+        led_rx.lock(|led_rx| {
             while usart_rx.is_rx_not_empty() {
                 led_rx.set_low();
                 match usart_rx.read() {
                     Ok(b) => {
-                        if shell_status.console_mode || shell_status.monitor_enabled {
-                            to_host_serial.enqueue(b).ok(); // this could over-run but it's ok the only solution would be a bigger buffer
-                        }
+                        to_host_serial.enqueue(b).ok(); // this could over-run but it's ok the only solution would be a bigger buffer
                     },
                     Err(_e) => {
                         break;
@@ -296,21 +283,15 @@ mod app {
         }
     }
 
-    #[task(local=[to_host_serial_consumer], shared=[shell, shell_status, power_meter])]
+    #[task(local=[to_host_serial_consumer], shared=[usb_serial])]
     fn console_monitor_task(mut cx: console_monitor_task::Context) {
-        use arrform::ArrForm;
-
         let to_host_serial_consumer = cx.local.to_host_serial_consumer;
-        let shell = &mut cx.shared.shell;
-        let shell_status = &mut cx.shared.shell_status;
-        let power_meter = &mut cx.shared.power_meter;
+        let usb_serial = &mut cx.shared.usb_serial;
 
-        // if the DUT has sent data over the uart, we send it to the host now
-        // at this point we can incercept and add additional info like power readings
+        // Forward data from physical serial port to USB serial port
         if to_host_serial_consumer.len() > 0 {
-            (shell, shell_status, power_meter).lock(|shell, shell_status, power_meter| {
-                let serial1 = shell.get_serial_mut();
-                let mut buf = [0u8; DUT_BUF_SIZE+32];
+            usb_serial.lock(|usb_serial| {
+                let mut buf = [0u8; DUT_BUF_SIZE];
                 let mut count = 0;
                 loop {
                     match to_host_serial_consumer.dequeue() {
@@ -320,91 +301,53 @@ mod app {
                             if count >= buf.len() {
                                 break;
                             }
-                            // check if we need to add power readings after the line break
-                            if shell_status.meter_enabled && c == 0x0d {
-                                let mut af = ArrForm::<64>::new();
-                                power_meter.write_trace(&mut af);
-
-                                for p in af.as_bytes() {
-                                    buf[count] = *p;
-                                    count += 1;
-                                }
-                            }
                         },
                         None => {
                             break;
                         }
                     }
                 }
-                if count>0 {
-                    serial1.write(&buf[..count]).ok();
+                if count > 0 {
+                    usb_serial.write(&buf[..count]).ok();
                 }
             });
         }
     }
 
-    #[task(binds = OTG_FS, shared = [usb_dev, shell, shell_status, dfu, ctl, led_cmd, storage, ctl_pins, power_meter, config], local=[esc_cnt:u8 = 0, to_dut_serial])]
+    #[task(binds = OTG_FS, shared = [usb_dev, usb_serial, dfu, ctl, led_cmd, storage, ctl_pins, power_meter, config], local=[to_dut_serial])]
     fn usb_task(mut cx: usb_task::Context) {
         let usb_dev         = &mut cx.shared.usb_dev;
-        let shell           = &mut cx.shared.shell;
-        let shell_status    = &mut cx.shared.shell_status;
+        let usb_serial      = &mut cx.shared.usb_serial;
         let dfu             = &mut cx.shared.dfu;
         let ctl             = &mut cx.shared.ctl;
         let led_cmd         = &mut cx.shared.led_cmd;
         let storage         = &mut cx.shared.storage;
         let to_dut_serial   = cx.local.to_dut_serial;
 
-        let esc_cnt         = cx.local.esc_cnt;
         let ctl_pins        = &mut cx.shared.ctl_pins;
         let power_meter     = &mut cx.shared.power_meter;
         let config          = &mut cx.shared.config;
 
-        (usb_dev, dfu, ctl, shell, shell_status, led_cmd, storage, ctl_pins, power_meter, config).lock(
-            |usb_dev, dfu, ctl, shell, shell_status, led_cmd, storage, ctl_pins, power_meter, config| {
-            let serial1 = shell.get_serial_mut();
-
-            if !usb_dev.poll(&mut [serial1, dfu, ctl]) {
+        (usb_dev, usb_serial, dfu, ctl, led_cmd, storage, ctl_pins, power_meter, config).lock(
+            |usb_dev, usb_serial, dfu, ctl, _led_cmd, storage, ctl_pins, power_meter, config| {
+            if !usb_dev.poll(&mut [usb_serial, dfu, ctl]) {
                 return;
             }
 
             ctl.post_poll(config, ctl_pins, storage, power_meter);
 
-            let available_to_dut = to_dut_serial.capacity()-to_dut_serial.len();
-
-            let mut send_to_dut = |buf: &[u8]|{
-                for b in buf {
-                    to_dut_serial.enqueue(*b).ok();
-                }
-                return
-            };
-
-            if shell_status.console_mode {
-                // if in console mode, send all data to the DUT, only read from the USB serial port as much as we can send to the DUT
+            // Forward USB serial data to physical serial port
+            let available_to_dut = to_dut_serial.capacity() - to_dut_serial.len();
+            if available_to_dut > 0 {
                 let mut buf = [0u8; DUT_BUF_SIZE];
-                match serial1.read(&mut buf[..available_to_dut]) {
+                match usb_serial.read(&mut buf[..available_to_dut]) {
                     Ok(count) => {
-                        send_to_dut(&buf[..count]);
-
-                        for c in &buf[..count] {
-                            if *c == 0x02 { // CTRL+B
-                                *esc_cnt = *esc_cnt + 1;
-                                if *esc_cnt == 5 {
-                                    shell_status.console_mode = false;
-                                    shell_status.monitor_enabled = false;
-                                    shell.write_str("\r\nExiting console mode\r\n").ok();
-                                    shell.write_str(shell::SHELL_PROMPT).ok();
-                                    *esc_cnt = 0;
-                                }
-                            } else {
-                                *esc_cnt = 0;
-                            }
+                        for b in &buf[..count] {
+                            to_dut_serial.enqueue(*b).ok();
                         }
                     },
-                    Err(_e) => {
-                    }
+                    Err(_e) => {}
                 }
-            } else {
-                shell::handle_shell_commands(shell, shell_status, led_cmd, storage, ctl_pins, &mut send_to_dut, power_meter, config);
             }
         });
     }
@@ -472,46 +415,23 @@ mod app {
 
 
     // Background task, runs whenever no other tasks are running
-    #[idle(local=[to_dut_serial_consumer, usart_tx], shared=[led_tx, shell_status])]
+    #[idle(local=[to_dut_serial_consumer, usart_tx], shared=[led_tx])]
     fn idle(mut ctx: idle::Context) -> ! {
-        // the source of this queue is the send command from the shell
+        // Forward data from USB serial to physical serial port
         let to_dut_serial_consumer = &mut ctx.local.to_dut_serial_consumer;
-        let shell_status = &mut ctx.shared.shell_status;
 
         loop {
             // Go to sleep, wake up on interrupt
-            let mut escaped = false;
             cortex_m::asm::wfi();
 
-            // NOTE: this can probably be moved to its own software task
             // Is there any data to be sent to the device under test over USART?
             if to_dut_serial_consumer.len() == 0 {
                 continue;
             }
-            let should_escape = shell_status.lock(|shell_status| !shell_status.console_mode);
             loop {
                 match to_dut_serial_consumer.dequeue() {
                     Some(c) => {
-                        // in console mode we should not handle escape characters.
-                        // this would be arguably better implemented in the shell send function
-                        // but this allows for the \w wait command to delay and not block other
-                        // tasts
-                        let mut final_c:u8 = c;
-                        if should_escape {
-                            if escaped == false && c == 0x5c { // backslash
-                                escaped = true;
-                                continue;
-                            }
-
-                            if escaped == true {
-                                escaped = false;
-                                final_c = match escaped_char(c) {
-                                    Some(c) => c,
-                                    None =>  continue,
-                                }
-                            }
-                        }
-
+                        // Transparent forwarding - no escape character processing
                         let usart_tx = &mut ctx.local.usart_tx;
                         let led_tx = &mut ctx.shared.led_tx;
                         led_tx.lock(|led_tx| led_tx.set_low());
@@ -522,7 +442,7 @@ mod app {
                             }
                         }
 
-                        usart_tx.write(final_c).ok();
+                        usart_tx.write(c).ok();
 
                     },
                     None => {
@@ -533,22 +453,6 @@ mod app {
         }
     }
 
-    fn escaped_char(c:u8) -> Option<u8> {
-
-        match c {
-            0x5c => { Some(0x5c) }, // \\
-            0x6e => { Some(0x0a) }, // \n
-            0x72 => { Some(0x0d) }, // \r
-            0x74 => { Some(0x09) }, // \t
-            0x61 => { Some(0x07) }, // \a alert
-            0x62 => { Some(0x08) }, // \b backspace
-            0x65 => { Some(0x1b) }, // \e escape character
-            0x63 => { Some(0x03) }, // \c // CTRL+C
-            0x64 => { Some(0x04) }, // \d CTRL+D
-            0x77 => { cortex_m::asm::delay(50*1000*1000); None },// \w WAIT DELAY
-            _ => Some(c)
-        }
-    }
 
 
 }

@@ -16,7 +16,7 @@ jobs:
           cd bootloader
           make in-container
       - name: Archive resulting bootloader
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jumpstarter-bootloader-dfu.bin
           path: bootloader/dfu-bootloader.bin
@@ -36,7 +36,7 @@ jobs:
           cd application
           make in-container
       - name: Archive resulting application
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jumpstarter-main.cab 
           path: application/jumpstarter*
